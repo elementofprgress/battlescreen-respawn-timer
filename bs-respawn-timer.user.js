@@ -1,53 +1,78 @@
 // ==UserScript==
-// @name        Battlescreen Vehicle Respawn Timer
-// @description Displays vehicle respawn time on Battlescreen
-// @author      Andersso
-// @version     0.4
+// @name        BattlescreenEnemyRespawnPlusZoomMod-resize overlay
+// @description Displays Enemey vehicle respawn time and tracks player when zoomed
+// @author      Andersso's work edit by Elementofprgress
+// @version     0.4.1
 // @match       http://battlelog.battlefield.com/bf4/*
+// @match		http://cte.battlelog.com/bf4/* 
+// @match		https://cte.battlelog.com/bf4/* 
 // @grant       none
 // ==/UserScript==
+//$('.uioverlaygroup').css({ 'transform': 'scale(0.65)', 'top': '0%', 'left': '500%'});
+//$('.uioverlaygroup').css({ 'transform': 'scale(0.65)' });
+$('#scoring-widget').css({ 'transform': 'scale(0.65)', 'position': 'absolute', 'top': '-5px', 'left': '-20px' });
+$('.squadlist').css({ 'transform': 'scale(0.75)', 'position': 'absolute', 'top': '185%', 'left': '0%'});
 (function() {
-    // Modification of jsdiff by Kevin Decker
-    // Source: https://github.com/kpdecker/jsdiff
     var jsDiff = (function() {
         var clonePath = function(path) {
             return {
                 newPos: path.newPos,
-                components: { added: path.components.added.slice(0), removed: path.components.removed.slice(0), existing: path.components.existing.slice(0) }
+                components: {
+                    added: path.components.added.slice(0),
+                    removed: path.components.removed.slice(0),
+                    existing: path.components.existing.slice(0)
+                }
             };
         };
         var extractCommon = function(basePath, newArray, oldArray, diagonalPath) {
-            var newLen = newArray.length, oldLen = oldArray.length,
-                newPos = basePath.newPos, oldPos = newPos - diagonalPath;
+            var newLen = newArray.length,
+                oldLen = oldArray.length,
+                newPos = basePath.newPos,
+                oldPos = newPos - diagonalPath;
             while (newPos <= newLen && oldPos + 1 < oldLen && newArray[newPos + 1] == oldArray[oldPos + 1]) {
-                basePath.components.existing.push({ oldPos: ++oldPos, newPos: ++newPos });
+                basePath.components.existing.push({
+                        oldPos: ++oldPos,
+                        newPos: ++newPos
+                    });
             }
             basePath.newPos = newPos;
             return oldPos;
         };
         return {
             diff: function(oldArray, newArray) {
-                var newLen = newArray.length, oldLen = oldArray.length, maxEditLength = newLen + oldLen,
-                    bestPath = [{ newPos: -1, components: { added: [], removed: [], existing: [] }}],
+                var newLen = newArray.length,
+                    oldLen = oldArray.length,
+                    maxEditLength = newLen + oldLen,
+                    bestPath = [{
+                            newPos: -1,
+                            components: {
+                                added: [],
+                                removed: [],
+                                existing: []
+                            }
+                        }
+                    ],
                     oldPos = extractCommon(bestPath[0], newArray, oldArray, 0);
                 if (oldPos + 1 >= oldLen) {
                     return bestPath[0].components;
                 }
                 for (var editLength = 1; editLength <= maxEditLength; editLength++) {
                     for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
-                        var basePath,addPath = bestPath[diagonalPath - 1], removePath = bestPath[diagonalPath + 1];
+                        var basePath, addPath = bestPath[diagonalPath - 1],
+                            removePath = bestPath[diagonalPath + 1];
                         oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
                         if (addPath) {
                             bestPath[diagonalPath - 1] = undefined;
                         }
-                        var canAdd = addPath && addPath.newPos <= newLen, canRemove = removePath && oldPos >= 0 && oldPos < oldLen;
+                        var canAdd = addPath && addPath.newPos <= newLen,
+                            canRemove = removePath && oldPos >= 0 && oldPos < oldLen;
                         if (!canAdd && !canRemove) {
                             bestPath[diagonalPath] = undefined;
                             continue;
                         }
                         if (!canAdd || (canRemove && addPath.newPos < removePath.newPos)) {
                             basePath = clonePath(removePath);
-                            if (oldArray[oldPos] != undefined) {
+                            if (oldArray[oldPos] !== undefined) {
                                 basePath.components.removed.push(oldPos);
                             }
                         } else {
@@ -70,23 +95,31 @@
         var _this = this;
         this.settings = {
             enabled: true,
-            enabledVehicles: [true, true, true, true, true, true, true, true, true, true, true]
+            enabledVehicles: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true]
         };
         $.extend(this.settings, JSON.parse(Surface.cookieGet("respawnTimerSettings") || "null"));
         this.vehicleInfo = [
             { displayName: "Tank",             iconId: 3715700347, respawnTime: 90000 },
-            { displayName: "IFV",              iconId: 1870125354, respawnTime: 90000 },
-            { displayName: "Anti-Air",         iconId: 2077838283, respawnTime: 90000 },
+            { displayName: "IFV",              iconId: 1870125354, respawnTime: 60000 },
+            { displayName: "Anti-Air",         iconId: 2077838283, respawnTime: 60000 },
             { displayName: "Mobile Artillery", iconId: 3138927120, respawnTime: 90000 },
-            { displayName: "AMTRAC",           iconId: 2800623557, respawnTime: 90000 },
+            { displayName: "AMTRAC",           iconId: 2800623557, respawnTime: 60000 },
             { displayName: "Stealth Jet",      iconId: 2303933806, respawnTime: 90000 },
             { displayName: "Attack Jet",       iconId: 2421515579, respawnTime: 90000 },
             { displayName: "Attack Heli",      iconId: 1002462244, respawnTime: 90000 },
             { displayName: "Scout Heli",       iconId: 738928977,  respawnTime: 60000 },
             { displayName: "Transport Heli",   iconId: 3146048021, respawnTime: 60000 },
-            { displayName: "Attack Craft",     iconId: 1385519273, respawnTime: 90000 }
+            { displayName: "Attack Craft",     iconId: 1385519273, respawnTime: 90000 },
+            { displayName: "RHIB",             iconId: 3210930213, respawnTime: 60000 },
+            { displayName: "Hovercraft",       iconId: 4078522406, respawnTime: 60000 },
+            { displayName: "Quad",             iconId: 2881969710, respawnTime: 50000 },
+            { displayName: "MRAP",             iconId: 1451751090, respawnTime: 50000 },
+            { displayName: "Jeep",             iconId: 4015226428, respawnTime: 50000 },
+            { displayName: "PWC",              iconId: 1606163358, respawnTime: 50000 },
+            { displayName: "TOW",              iconId: 1537363731, respawnTime: 50000 },
+            { displayName: "GUNSHIP!",         iconId: 9999999999, respawnTime: 10000 }
         ];
-        this.resetRespawnTimer = function () {
+        this.resetRespawnTimer = function() {
             this.lastX = [];
             this.lastY = [];
             this.lastIcon = [];
@@ -100,28 +133,36 @@
             bs.connection.addEventListener("connect", function() {
                 BattleScreen.prototype.onConnect.apply(bs, arguments);
                 var userPresence = Surface.globalContext.session.user.presence;
+                bs.minimap.maxZoom = 16;
                 // Get respawn delay from server page
                 $.ajax({
-                    url: Surface.valOut(S.Modifier.urlformat("/{_section}/{_language}/servers/show/{platform}/{guid}/{slug}/", Surface.urlContext, {
-                    "guid":     userPresence.playingMp.serverGuid,
-                    "platform": S.Modifier.lower($S.callFunction("base.platform", userPresence.playingMp.platform)),
-                    "slug":     S.Modifier.slugify(userPresence.playingMp.serverName)
-                })),
-                beforeSend: function(xmlHttpRequest, settings) {
-                    xmlHttpRequest.setRequestHeader("X-AjaxNavigation", "1");
-                },
-                success: function(data) {
-                    _this.respawnDelay = data.context.server.settings.vvsd / 100;
-                }
-                });
+                        url: Surface.valOut(S.Modifier.urlformat("/{_section}/{_language}/servers/show/{platform}/{guid}/{slug}/", Surface.urlContext, {
+                                    "guid": userPresence.playingMp.serverGuid,
+                                    "platform": S.Modifier.lower($S.callFunction("base.platform", userPresence.playingMp.platform)),
+                                    "slug": S.Modifier.slugify(userPresence.playingMp.serverName)
+                                })),
+                        beforeSend: function(xmlHttpRequest, settings) {
+                            xmlHttpRequest.setRequestHeader("X-AjaxNavigation", "1");
+                        },
+                        success: function(data) {
+                            _this.respawnDelay = data.context.server.settings.vvsd / 100;
+                        }
+                    });
             }.bind(this));
             bs.connection.addEventListener("disconnect", function() {
                 BattleScreen.prototype.onDisconnect.apply(bs, arguments);
                 $("#respawn-timer").hide();
+                $("#respawn-timer2").hide();
                 this.resetRespawnTimer();
             }.bind(this));
             bs.connection.addEventListener("recv", function(newState) {
                 BattleScreen.prototype.onRecv.apply(bs, arguments);
+                if (newState.type == "player") {
+                    var scalex = bs.minimap.destRect[2]/bs.minimap.destRectBounds[2];
+                    if (scalex != 1) {
+                        bs.minimap.pan(bs.minimap.minimapToCanvasPos([bs.players[bs.localPlayerIdx].xpos, bs.players[bs.localPlayerIdx].ypos])[0]-(bs.canvas.width/2), bs.minimap.minimapToCanvasPos([bs.players[bs.localPlayerIdx].xpos, bs.players[bs.localPlayerIdx].ypos])[1] - (bs.canvas.height/2));
+                    }
+                }
                 if (newState.type == "vehicles") {
                     var currentTime = Date.now(),
                         result = jsDiff.diff(this.lastIcon, newState.icon);
@@ -192,16 +233,16 @@
                         $("#respawn-timer").show();
                     } else {
                         $("#respawn-timer").hide();
-                         this.resetRespawnTimer();
+                        this.resetRespawnTimer();
                     }
-                // Reset if the player has switched team
+                    // Reset if the player has switched team
                 } else if (newState.type == "tickets") {
                     if (!newState.friendTickets || !newState.enemyTickets || (this.friendName && this.friendName != newState.friendName)) {
-                         this.resetRespawnTimer();
+                        this.resetRespawnTimer();
                     }
                     this.friendName = newState.friendName;
                 }
-            }.bind(this));
+            }.bind(this));   
             this.refreshSpawnList = function() {
                 var c = [];
                 for (var i = 0; i < this.vehicleRespawns.length; i++) {
@@ -230,7 +271,7 @@
             this.timer_refreshRespawnTime();
             var c = [];
             c.push('<div class="uioverlaysectionright">\n ');
-            c.push('<div class="uioverlaygroup">\n ');
+            c.push('<div class="uioverlaygroup2">\n ');
             c.push('<div class="box" id="respawn-timer">\n ');
             c.push('<header>\n <p>Estimated Respawns</p>\n </header>\n ');
             c.push('<div class="box-content" id="timer-list"></div>\n </div>\n </div>\n </div>\n ');
@@ -283,16 +324,16 @@
         this.injectStyle = function() {
             var c = [];
             c.push('<style id="bob" type="text/css">\n ');
-            c.push("#respawn-timer {\n cursor: default;\n width: 180px;\n margin: 10px;\n display: none;\n }\n ");
+            c.push("#respawn-timer {\n cursor: default;\n width: 170px;\n margin: 10px;\n display: none;\n }\n ");
             c.push("#respawn-timer > header {\n background-color: white;\n }\n ");
-            c.push("#respawn-timer > header > p {\n padding: 5px 0px;\n text-align: center;\n color:black;\n letter-spacing: 0.027em;\n }\n ");
+            c.push("#respawn-timer > header > p {font-size: 11pt;\n padding: 5px 0px;\n text-align: center;\n color:black;\n letter-spacing: 0.027em;\n }\n ");
             c.push("#timer-list {\n padding: 0px 5px 5px 5px;\n display: none;\n }\n ");
-            c.push("#timer-list dl {\n padding-bottom: 20px;\n margin-top: 5px;\n border-bottom: 1px solid rgba(255,255,255,0.5);\n }\n ");
+            c.push("#timer-list dl {font-size: 10pt;\n padding-bottom: 13px;\n margin-top: 3px;\n border-bottom: 1px solid rgba(255,255,255,0.5);\n }\n ");
             c.push("#timer-list dt {\n float: left;\n }\n ");
             c.push("#timer-list dd {\n float: right;\n }\n ");
             c.push("#respawn-timer-settings > div {\n float: left;\n }\n ");
             c.push("#respawn-timer-settings > div > div {\n margin:3px 0;\n }\n ");
-            c.push("#respawn-timer-settings > div > p {\n margin-top: 10px;\n font-size: 9pt;\n text-transform: uppercase;\n font-weight: bold;\n }\n ");
+            c.push("#respawn-timer-settings > div > p {\n margin-top: 8px;\n font-size: 8pt;\n text-transform: uppercase;\n font-weight: bold;\n }\n ");
             c.push("</style>\n ");
             $("head").append(c.join(""));
         };
